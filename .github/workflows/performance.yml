@@ -1,0 +1,40 @@
+name: TripStack Performance
+
+on:
+  workflow_dispatch
+
+jobs:
+
+  performance:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+
+      - name: Get Bus ID
+        run: |
+          node performance/getBusId.js
+
+      - name: Read Bus ID
+        run: |
+          echo "BUS_ID=$(cat busid.txt)" >> $GITHUB_ENV
+
+      - uses: grafana/setup-k6-action@v1
+
+      - name: Run k6
+        run: |
+          k6 run performance/seatmap.js
+        env:
+          BASE_URL: https://tripstack.doomple.com
+          BUS_ID: ${{ env.BUS_ID }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: performance-results
+          path: |
+            busid.txt
+            seatmap-summary.json
