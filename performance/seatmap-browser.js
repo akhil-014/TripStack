@@ -20,7 +20,7 @@ export default async function () {
   const page = await browser.newPage();
 
   try {
-    await page.goto('https://test.k6.io/');
+    await page.goto('https://tripstack.doomple.com/buses/BUS-BOMDEL-04/seatmap');
     await page.screenshot({ path: 'screenshots/screenshot.png' });
   } finally {
     await page.close();
