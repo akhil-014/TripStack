@@ -21,10 +21,13 @@ jobs:
         env:
           K6_BROWSER_HEADLESS: true
         run: |
-          k6 run performance/seatmap-browser.js
+          k6 run \
+          --summary-export=seatmap-summary.json \
+          performance/seatmap-browser.js
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: seatmap-performance
-          path: seatmap-summary.json
+          path: |
+            seatmap-summary.json
