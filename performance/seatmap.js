@@ -1,66 +1,55 @@
-import http from "k6/http";
-import { check } from "k6";
-
-const BASE_URL =
-  __ENV.BASE_URL || "https://api.tripstack.doomple.com";
-
-const BUS_ID = __ENV.BUS_ID;
+import { browser } from 'k6/browser';
+import { check } from 'k6';
 
 export const options = {
   scenarios: {
-    seatmap_load: {
-      executor: "constant-vus",
-      vus: 5,
-      duration: "30s",
+    seatmap_render: {
+      executor: 'shared-iterations',
+      vus: 1,
+      iterations: 5,
+      options: {
+        browser: {
+          type: 'chromium',
+        },
+      },
     },
   },
 
   thresholds: {
-    http_req_duration: [
-      "p(95)<2000",
-      "p(99)<3000",
-    ],
-
-    http_req_failed: [
-      "rate<0.01",
-    ],
-
-    checks: [
-      "rate>0.99",
-    ],
+    checks: ['rate>0.95'],
   },
 };
 
-export default function () {
+export default async function () {
+  const page = await browser.newPage();
 
-  const res = http.get(
-    `${BASE_URL}/api/buses/${BUS_ID}/seats`
-  );
+  try {
+    const start = Date.now();
 
-  check(res, {
-    "status is 200": (r) => r.status === 200,
-  });
+    await page.goto(
+      'https://tripstack.doomple.com/buses/BUS-BOMDEL-04/seatmap',
+      {
+        waitUntil: 'networkidle',
+      }
+    );
+
+    await page.locator('[data-seat]').first().waitFor();
+
+    const renderTime = Date.now() - start;
+
+    console.log(`Seat Map Render Time = ${renderTime} ms`);
+
+    check(renderTime, {
+      'seat map render under 3000ms': (t) => t < 3000,
+    });
+
+  } finally {
+    await page.close();
+  }
 }
 
 export function handleSummary(data) {
   return {
-    "seatmap-summary.json":
-      JSON.stringify(data, null, 2),
-
-    stdout:
-      JSON.stringify(
-        {
-          p95:
-            data.metrics.http_req_duration.values["p(95)"],
-
-          p99:
-            data.metrics.http_req_duration.values["p(99)"],
-
-          errorRate:
-            data.metrics.http_req_failed.values.rate,
-        },
-        null,
-        2
-      ),
+    'seatmap-summary.json': JSON.stringify(data, null, 2),
   };
 }

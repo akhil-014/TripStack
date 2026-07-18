@@ -1,40 +1,27 @@
-name: TripStack Performance
+name: SeatMap Performance
 
 on:
-  workflow_dispatch
+  workflow_dispatch:
 
 jobs:
-
-  performance:
-
+  performance-gate:
     runs-on: ubuntu-latest
 
+    timeout-minutes: 10
+
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/checkout@v4
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
 
-      - uses: actions/setup-node@v4
-
-      - name: Get Bus ID
+      - name: Run SeatMap Render Test
         run: |
-          node performance/getBusId.js
+          k6 run performance/seatmap-browser.js
 
-      - name: Read Bus ID
-        run: |
-          echo "BUS_ID=$(cat busid.txt)" >> $GITHUB_ENV
-
-      - uses: grafana/setup-k6-action@v1
-
-      - name: Run k6
-        run: |
-          k6 run performance/seatmap.js
-        env:
-          BASE_URL: https://tripstack.doomple.com
-          BUS_ID: ${{ env.BUS_ID }}
-
-      - uses: actions/upload-artifact@v4
+      - name: Upload Performance Results
+        uses: actions/upload-artifact@v4
         with:
-          name: performance-results
-          path: |
-            busid.txt
-            seatmap-summary.json
+          name: seatmap-performance
+          path: seatmap-summary.json
