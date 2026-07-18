@@ -7,21 +7,24 @@ jobs:
   performance-gate:
     runs-on: ubuntu-latest
 
-    timeout-minutes: 10
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup k6
-        uses: grafana/setup-k6-action@v1
+      - uses: grafana/setup-k6-action@v1
 
-      - name: Run SeatMap Render Test
+      - name: Install Chromium
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser || sudo apt-get install -y chromium
+
+      - name: Run SeatMap Browser Test
+        env:
+          K6_BROWSER_HEADLESS: true
         run: |
           k6 run performance/seatmap-browser.js
 
-      - name: Upload Performance Results
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: seatmap-performance
           path: seatmap-summary.json

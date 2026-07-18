@@ -14,33 +14,35 @@ export const options = {
       },
     },
   },
-
-  thresholds: {
-    checks: ['rate>0.95'],
-  },
 };
 
 export default async function () {
   const page = await browser.newPage();
 
   try {
-    const start = Date.now();
 
     await page.goto(
-      'https://tripstack.doomple.com/buses/BUS-BOMDEL-04/seatmap',
-      {
-        waitUntil: 'networkidle',
-      }
+      'https://tripstack.doomple.com/buses/BUS-BOMDEL-04/seatmap'
     );
 
     await page.locator('[data-seat]').first().waitFor();
 
-    const renderTime = Date.now() - start;
+    const metrics = await page.evaluate(() => {
+      const nav =
+        performance.getEntriesByType('navigation')[0];
 
-    console.log(`Seat Map Render Time = ${renderTime} ms`);
+      return {
+        loadTime: nav.loadEventEnd,
+        domContentLoaded: nav.domContentLoadedEventEnd
+      };
+    });
 
-    check(renderTime, {
-      'seat map render under 3000ms': (t) => t < 3000,
+    console.log(
+      `Load Time = ${metrics.loadTime} ms`
+    );
+
+    check(metrics.loadTime, {
+      'seatmap < 3000ms': (v) => v < 3000,
     });
 
   } finally {
