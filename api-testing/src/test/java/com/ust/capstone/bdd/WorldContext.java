@@ -1,9 +1,6 @@
 package com.ust.capstone.bdd;
 
-import com.ust.capstone.data.repository.BookingRepository;
 import io.restassured.response.Response;
-
-import java.sql.Connection;
 
 public class WorldContext {
 
@@ -16,28 +13,9 @@ public class WorldContext {
     private Response response;
     private String otherUserBookingId;
 
-    //DB
-    private Connection connection;
-    private BookingRepository bookingRepository;
-
-    public Connection getConnection() {
-        return connection;
-    }
-
-    public void setConnection(Connection connection) {
-        this.connection = connection;
-    }
-
-    public BookingRepository getBookingRepository() {
-        return bookingRepository;
-    }
-
-    public void setBookingRepository(
-            BookingRepository bookingRepository) {
-        this.bookingRepository = bookingRepository;
-    }
-
     //  API
+
+
     public Response getResponse() {
         return response;
     }
