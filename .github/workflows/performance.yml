@@ -1,10 +1,12 @@
-name: SeatMap Performance
+name: Capstone Test Suite
 
 on:
   workflow_dispatch:
 
 jobs:
-  performance-gate:
+
+  performance:
+    name: Performance Testing (K6)
     runs-on: ubuntu-latest
 
     steps:
@@ -22,12 +24,89 @@ jobs:
           K6_BROWSER_HEADLESS: true
         run: |
           k6 run \
-          --summary-export=seatmap-summary.json \
-          performance/seatmap-browser.js
+            --summary-export=seatmap-summary.json \
+            performance/seatmap-browser.js
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload Performance Results
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: seatmap-performance
+          name: performance-results
+          path: seatmap-summary.json
+
+  ui-test:
+    name: UI Testing (Playwright)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ui-testing
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright Tests
+        run: npx playwright test
+
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
           path: |
-            seatmap-summary.json
+            ui-testing/playwright-report
+            ui-testing/test-results
+
+  api-test:
+    name: API Testing (Maven + Allure)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: api-testing
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Cache Maven
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('api-testing/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Run API Tests
+        run: mvn clean test
+
+      - name: Upload Allure Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: allure-results
+          path: api-testing/target/allure-results
+
+      - name: Upload Surefire Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: api-test-reports
+          path: |
+            api-testing/target/surefire-reports
+            api-testing/test-output
